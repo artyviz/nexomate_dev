@@ -729,4 +729,6 @@ app.mount("/", StaticFiles(directory=HERE), name="static")
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=int(env("PORT", "8000")))
+    # Use BACKEND_PORT (default 8000) so this internal service does not collide with Render's public $PORT
+    srv_port = int(env("BACKEND_PORT", "8000"))
+    uvicorn.run(app, host="0.0.0.0", port=srv_port)

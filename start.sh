@@ -8,7 +8,7 @@ echo "=== Starting Nexomate Lead Engine ==="
 
 # 1. Start FastAPI backend daemon on port 8000
 echo "Starting FastAPI backend on port 8000..."
-python lead-workflow-demo/server.py &
+BACKEND_PORT=8000 python lead-workflow-demo/server.py &
 
 # 2. Start WhatsApp Linked Device Bridge on port 8001 (if node is available)
 if command -v node >/dev/null 2>&1; then
