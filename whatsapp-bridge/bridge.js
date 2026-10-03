@@ -38,6 +38,9 @@ function extractText(message) {
 }
 
 async function startSock() {
+    if (sock && sock.ev) {
+        try { sock.ev.removeAllListeners(); } catch (_) {}
+    }
     const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
 
     sock = makeWASocket({
@@ -268,7 +271,7 @@ const server = http.createServer(async (req, res) => {
     res.end(JSON.stringify({ error: 'Not found' }));
 });
 
-server.listen(PORT, () => {
-    console.log(`[WhatsApp Bridge API] Listening on http://localhost:${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`[WhatsApp Bridge API] Listening on http://0.0.0.0:${PORT}`);
     startSock();
 });

@@ -155,19 +155,35 @@ def whatsapp_page():
                         st.image(qr_bytes, caption="Scan in WhatsApp: Linked Devices", width=220)
                     except Exception:
                         st.image(qr_data, caption="Scan in WhatsApp: Linked Devices", width=220)
+
+                    st.markdown("""
+                    <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #34D399; font-weight: 700; margin-top: 4px; letter-spacing: 0.5px;">
+                        ● LIVE QR STREAM ACTIVE
+                    </div>
+                    """, unsafe_allow_html=True)
                 else:
                     refresh_count = st.session_state.get("qr_refresh_count", 0)
-                    if refresh_count < 2:
+                    if refresh_count < 6:
                         st.session_state["qr_refresh_count"] = refresh_count + 1
-                        st.info("⚡ Initializing WhatsApp AI Bridge... Loading live QR code...")
-                        time.sleep(1.2)
+                        st.info(f"⚡ Establishing WhatsApp Web socket... Polling for live QR ({refresh_count + 1}/6)...")
+                        time.sleep(1.5)
                         st.rerun()
                     else:
-                        st.warning("Bridge standing by. Click refresh below to load the live QR code.")
+                        st.warning("WhatsApp bridge is standing by. Click 'Refresh QR' below to stream the code.")
 
-                if st.button("🔄 Check Connection / Refresh QR", key="btn_check_qr"):
-                    st.session_state["qr_refresh_count"] = 0
-                    st.rerun()
+                qbtn_col1, qbtn_col2 = st.columns(2)
+                with qbtn_col1:
+                    if st.button("🔄 Refresh QR", key="btn_check_qr", use_container_width=True):
+                        st.session_state["qr_refresh_count"] = 0
+                        st.rerun()
+                with qbtn_col2:
+                    if st.button("⚡ New Code", key="btn_new_qr", use_container_width=True):
+                        try:
+                            requests.post(f"{BRIDGE_BASE}/logout", timeout=3)
+                        except Exception:
+                            pass
+                        st.session_state["qr_refresh_count"] = 0
+                        st.rerun()
 
             with qcol2:
                 st.markdown(f"""
