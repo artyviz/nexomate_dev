@@ -144,61 +144,110 @@ def whatsapp_page():
             except Exception as e:
                 st.error(f"Error logging out: {e}")
     else:
-        with st.expander("📲 LINK YOUR BUSINESS PHONE NUMBER (SCAN QR CODE)", expanded=True):
-            qcol1, qcol2 = st.columns([1, 2])
-            with qcol1:
-                qr_data = bridge.get("qr") if bridge else None
-                if qr_data and "," in qr_data:
-                    st.session_state["qr_refresh_count"] = 0
-                    try:
-                        qr_bytes = base64.b64decode(qr_data.split(",")[1])
-                        st.image(qr_bytes, caption="Scan in WhatsApp: Linked Devices", width=220)
-                    except Exception:
-                        st.image(qr_data, caption="Scan in WhatsApp: Linked Devices", width=220)
+        with st.expander("📲 LINK YOUR BUSINESS PHONE NUMBER (SCAN QR OR 8-DIGIT CODE)", expanded=True):
+            pair_tab1, pair_tab2 = st.tabs(["📷 SCAN LIVE QR CODE", "🔢 LINK WITH PHONE NUMBER (NO CAMERA / ZERO GLITCHES)"])
 
-                    st.markdown("""
-                    <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #34D399; font-weight: 700; margin-top: 4px; letter-spacing: 0.5px;">
-                        ● LIVE QR STREAM ACTIVE
+            with pair_tab1:
+                qcol1, qcol2 = st.columns([1, 2])
+                with qcol1:
+                    qr_data = bridge.get("qr") if bridge else None
+                    if qr_data and "," in qr_data:
+                        st.session_state["qr_refresh_count"] = 0
+                        try:
+                            qr_bytes = base64.b64decode(qr_data.split(",")[1])
+                            st.image(qr_bytes, caption="Scan in WhatsApp: Linked Devices", width=220)
+                        except Exception:
+                            st.image(qr_data, caption="Scan in WhatsApp: Linked Devices", width=220)
+
+                        st.markdown("""
+                        <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #34D399; font-weight: 700; margin-top: 4px; letter-spacing: 0.5px;">
+                            ● LIVE QR STREAM ACTIVE
+                        </div>
+                        """, unsafe_allow_html=True)
+                    else:
+                        refresh_count = st.session_state.get("qr_refresh_count", 0)
+                        if refresh_count < 6:
+                            st.session_state["qr_refresh_count"] = refresh_count + 1
+                            st.info(f"⚡ Establishing WhatsApp Web socket... Polling for live QR ({refresh_count + 1}/6)...")
+                            time.sleep(1.5)
+                            st.rerun()
+                        else:
+                            st.warning("WhatsApp bridge is standing by. Click 'Refresh QR' below to stream the code.")
+
+                    qbtn_col1, qbtn_col2 = st.columns(2)
+                    with qbtn_col1:
+                        if st.button("🔄 Refresh QR", key="btn_check_qr", use_container_width=True):
+                            st.session_state["qr_refresh_count"] = 0
+                            st.rerun()
+                    with qbtn_col2:
+                        if st.button("⚡ New Code", key="btn_new_qr", use_container_width=True):
+                            try:
+                                requests.post(f"{BRIDGE_BASE}/logout", timeout=3)
+                            except Exception:
+                                pass
+                            st.session_state["qr_refresh_count"] = 0
+                            st.rerun()
+
+                with qcol2:
+                    st.markdown(f"""
+                    <div style="font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem; color: #F3F3EF;">
+                        How to Link Any Business WhatsApp Account:
+                    </div>
+                    <ol style="font-family: 'Lora', serif; font-size: 0.9rem; line-height: 1.8; color: #CCCCCC; margin-left: 1.2rem;">
+                        <li>Open <b>WhatsApp</b> on the target business smartphone or WhatsApp Business app.</li>
+                        <li>Tap <b>Settings</b> (on iOS) or <b>⋮ Menu</b> (on Android) → <b>Linked Devices</b>.</li>
+                        <li>Tap <b>Link a Device</b> and point the camera at the live QR code on the left.</li>
+                    </ol>
+                    <div style="background: #111111; border-left: 3px solid #22D3EE; padding: 0.6rem 0.8rem; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #888888; margin-top: 0.8rem;">
+                        ⚡ <b>FAST CRYPTO HANDSHAKE:</b> Socket reconnects in &lt;100ms to eliminate phone-side timeout errors.
                     </div>
                     """, unsafe_allow_html=True)
-                else:
-                    refresh_count = st.session_state.get("qr_refresh_count", 0)
-                    if refresh_count < 6:
-                        st.session_state["qr_refresh_count"] = refresh_count + 1
-                        st.info(f"⚡ Establishing WhatsApp Web socket... Polling for live QR ({refresh_count + 1}/6)...")
-                        time.sleep(1.5)
-                        st.rerun()
-                    else:
-                        st.warning("WhatsApp bridge is standing by. Click 'Refresh QR' below to stream the code.")
 
-                qbtn_col1, qbtn_col2 = st.columns(2)
-                with qbtn_col1:
-                    if st.button("🔄 Refresh QR", key="btn_check_qr", use_container_width=True):
-                        st.session_state["qr_refresh_count"] = 0
-                        st.rerun()
-                with qbtn_col2:
-                    if st.button("⚡ New Code", key="btn_new_qr", use_container_width=True):
-                        try:
-                            requests.post(f"{BRIDGE_BASE}/logout", timeout=3)
-                        except Exception:
-                            pass
-                        st.session_state["qr_refresh_count"] = 0
-                        st.rerun()
-
-            with qcol2:
-                st.markdown(f"""
-                <div style="font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem; color: #F3F3EF;">
-                    How to Link Any Business WhatsApp Account:
+            with pair_tab2:
+                st.markdown("""
+                <div style="font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 700; color: #F3F3EF; margin-bottom: 0.4rem;">
+                    Link Directly Using an 8-Digit Pairing Code
                 </div>
-                <ol style="font-family: 'Lora', serif; font-size: 0.9rem; line-height: 1.8; color: #CCCCCC; margin-left: 1.2rem;">
-                    <li>Open <b>WhatsApp</b> on the target business smartphone or WhatsApp Business app.</li>
-                    <li>Tap <b>Settings</b> (on iOS) or <b>⋮ Menu</b> (on Android) → <b>Linked Devices</b>.</li>
-                    <li>Tap <b>Link a Device</b> and point the camera at the live QR code on the left.</li>
-                </ol>
-                <div style="background: #111111; border-left: 3px solid #22D3EE; padding: 0.6rem 0.8rem; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #888888; margin-top: 0.8rem;">
-                    ⚡ <b>WORKS WITH ANY PHONE NUMBER:</b> The bot dynamically adopts whatever phone number scans the QR code. Zero Twilio fees, zero approval wait times.
+                <div style="font-family: 'Lora', serif; font-size: 0.88rem; color: #AAAAAA; margin-bottom: 1rem;">
+                    If your phone gives connection or camera scan errors, use WhatsApp's official numeric pairing code. No camera scan required.
                 </div>
                 """, unsafe_allow_html=True)
+                pcol1, pcol2 = st.columns([2, 1])
+                with pcol1:
+                    phone_val = st.text_input("WhatsApp Phone Number (with Country Code)", value="", placeholder="e.g. 919971786873", key="wa_pair_phone_input")
+                with pcol2:
+                    st.markdown("<div style='height: 1.7rem;'></div>", unsafe_allow_html=True)
+                    btn_gen_pair = st.button("⚡ Get 8-Digit Code", key="btn_gen_pair_code", use_container_width=True)
+
+                if btn_gen_pair and phone_val:
+                    with st.spinner("Requesting pairing code from WhatsApp servers..."):
+                        try:
+                            clean = phone_val.replace("+", "").replace(" ", "").replace("-", "")
+                            res = requests.post(f"{BRIDGE_BASE}/pairing-code", json={"phone": clean}, timeout=12)
+                            data = res.json()
+                            if res.status_code == 200 and data.get("code"):
+                                st.session_state["active_pair_code"] = data.get("code")
+                            else:
+                                st.error(data.get("error", "Failed to retrieve pairing code from bridge."))
+                        except Exception as e:
+                            st.error(f"Bridge communication error: {e}")
+
+                if st.session_state.get("active_pair_code"):
+                    pcode = st.session_state["active_pair_code"]
+                    st.markdown(f"""
+                    <div style="border: 2px solid #22D3EE; background: rgba(34, 211, 238, 0.08); padding: 1.2rem; margin-top: 1rem; text-align: center;">
+                        <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: #888888; text-transform: uppercase; letter-spacing: 1.5px;">YOUR 8-DIGIT PAIRING CODE</div>
+                        <div style="font-family: 'JetBrains Mono', monospace; font-size: 2.4rem; font-weight: 800; color: #22D3EE; letter-spacing: 4px; margin: 0.5rem 0;">
+                            {pcode}
+                        </div>
+                        <div style="font-family: 'Lora', serif; font-size: 0.9rem; color: #DDDDDD; margin-top: 0.5rem; text-align: left; max-width: 500px; margin-left: auto; margin-right: auto;">
+                            <b>On your phone:</b><br>
+                            1. Open WhatsApp → <b>Linked Devices</b> → <b>Link a Device</b>.<br>
+                            2. Tap <b>"Link with phone number instead"</b> at the bottom.<br>
+                            3. Type the code <b>{pcode}</b> into WhatsApp.
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
     # ── Webhook Connection Drawer (Twilio Alternative) ─────────────────────────
     with st.expander("▾ ADVANCED: TWILIO CLOUD WEBHOOK (OPTIONAL SANDBOX)", expanded=False):

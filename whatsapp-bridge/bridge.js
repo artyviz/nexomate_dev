@@ -1,4 +1,4 @@
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 const QRCode = require('qrcode');
 const http = require('http');
@@ -47,7 +47,12 @@ async function startSock() {
         auth: state,
         logger: pino({ level: 'silent' }),
         printQRInTerminal: false,
-        browser: ['Nexomate Lead AI', 'Chrome', '120.0.0']
+        browser: Browsers.ubuntu('Chrome'),
+        syncFullHistory: false,
+        markOnlineOnConnect: true,
+        connectTimeoutMs: 60000,
+        defaultQueryTimeoutMs: 60000,
+        keepAliveIntervalMs: 25000,
     });
 
     sock.ev.on('creds.update', saveCreds);
@@ -67,18 +72,23 @@ async function startSock() {
         }
 
         if (connection === 'close') {
-            const shouldReconnect = (lastDisconnect?.error)?.output?.statusCode !== DisconnectReason.loggedOut;
-            console.log('[WhatsApp Bridge] Connection closed. Reconnecting:', shouldReconnect);
+            const statusCode = (lastDisconnect?.error)?.output?.statusCode;
+            const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+            console.log(`[WhatsApp Bridge] Connection closed (code: ${statusCode}). Reconnecting: ${shouldReconnect}`);
             isConnected = false;
             connectedPhone = null;
+
             if (shouldReconnect) {
-                setTimeout(startSock, 3000);
+                // Code 515 = restartRequired. Triggered immediately when phone scans the QR code.
+                // Must reconnect immediately (< 100ms) or the phone client times out with "Check your internet connection"!
+                const delay = statusCode === DisconnectReason.restartRequired ? 100 : 1500;
+                setTimeout(startSock, delay);
             } else {
-                console.log('[WhatsApp Bridge] Logged out. Clearing credentials...');
+                console.log('[WhatsApp Bridge] Logged out or credentials revoked. Resetting auth...');
                 if (fs.existsSync(AUTH_DIR)) {
                     fs.rmSync(AUTH_DIR, { recursive: true, force: true });
                 }
-                setTimeout(startSock, 2000);
+                setTimeout(startSock, 1000);
             }
         } else if (connection === 'open') {
             isConnected = true;
@@ -211,6 +221,41 @@ const server = http.createServer(async (req, res) => {
             phone: connectedPhone ? `+${connectedPhone}` : null,
             qr: currentQRDataUrl
         }));
+        return;
+    }
+
+    if (url.pathname === '/pairing-code' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => { body += chunk; });
+        req.on('end', async () => {
+            try {
+                const data = JSON.parse(body || '{}');
+                const rawPhone = data.phone || '';
+                const cleanPhone = rawPhone.replace(/\D/g, '');
+                if (!cleanPhone || cleanPhone.length < 9) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'Valid phone number with country code is required (e.g. 919971786873)' }));
+                    return;
+                }
+                if (!sock) {
+                    await startSock();
+                }
+                if (!sock || typeof sock.requestPairingCode !== 'function') {
+                    res.writeHead(503, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'Pairing service initializing. Please try again in 5 seconds.' }));
+                    return;
+                }
+                const code = await sock.requestPairingCode(cleanPhone);
+                const formatted = code ? (code.slice(0, 4) + '-' + code.slice(4)) : code;
+                console.log(`[WhatsApp Bridge] Pairing code generated for ${cleanPhone}: ${formatted}`);
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: true, code: formatted, raw_code: code }));
+            } catch (err) {
+                console.error('[WhatsApp Bridge] Pairing code error:', err.message);
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: err.message }));
+            }
+        });
         return;
     }
 
