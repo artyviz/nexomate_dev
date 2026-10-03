@@ -16,6 +16,14 @@ try:
 except Exception:
     pass  # Migrations are best-effort — new DBs already have correct schema
 
+# ── Ensure background AI and WhatsApp services are active ─────────────────────
+try:
+    import threading
+    from dashboard.service_manager import ensure_all_services_running
+    threading.Thread(target=ensure_all_services_running, daemon=True).start()
+except Exception:
+    pass
+
 # ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Nexomate",

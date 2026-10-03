@@ -2,31 +2,35 @@
 """WhatsApp Autonomous AI Lead Generation — Noir Press Edition."""
 
 import base64
-import re
+import time
 import requests
 import streamlit as st
 from datetime import datetime
 from database.database import SessionLocal
 from database.models import Lead
 from config import GROQ_MODEL
+from dashboard.service_manager import ensure_all_services_running
 BUSINESS_NAME = "Nexomate"
 
 
 # Local FastAPI demo server endpoint
-API_BASE = "http://localhost:8000/api"
-BRIDGE_BASE = "http://localhost:8001"
+API_BASE = "http://127.0.0.1:8000/api"
+BRIDGE_BASE = "http://127.0.0.1:8001"
 
 
 def get_live_data():
+    # Automatically verify and spawn background services if offline
+    ensure_all_services_running()
+
     cfg, stats, leads, bridge = None, None, [], None
     try:
-        cfg = requests.get(f"{API_BASE}/config", timeout=2).json()
-        stats = requests.get(f"{API_BASE}/stats", timeout=2).json()
-        leads = requests.get(f"{API_BASE}/leads", timeout=2).json()
+        cfg = requests.get(f"{API_BASE}/config", timeout=4).json()
+        stats = requests.get(f"{API_BASE}/stats", timeout=4).json()
+        leads = requests.get(f"{API_BASE}/leads", timeout=4).json()
     except Exception:
         pass
     try:
-        bridge = requests.get(f"{BRIDGE_BASE}/status", timeout=2).json()
+        bridge = requests.get(f"{BRIDGE_BASE}/status", timeout=4).json()
     except Exception:
         pass
     return cfg, stats, leads, bridge
@@ -151,7 +155,9 @@ def whatsapp_page():
                     except Exception:
                         st.image(qr_data, caption="Scan in WhatsApp: Linked Devices", width=220)
                 else:
-                    st.info("Generating QR Code... Ensure bridge is running.")
+                    st.info("⚡ Initializing WhatsApp AI Bridge... Loading live QR code...")
+                    time.sleep(1.5)
+                    st.rerun()
 
                 if st.button("🔄 Check Connection / Refresh QR", key="btn_check_qr"):
                     st.rerun()
