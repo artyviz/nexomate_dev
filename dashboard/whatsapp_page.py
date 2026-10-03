@@ -149,17 +149,24 @@ def whatsapp_page():
             with qcol1:
                 qr_data = bridge.get("qr") if bridge else None
                 if qr_data and "," in qr_data:
+                    st.session_state["qr_refresh_count"] = 0
                     try:
                         qr_bytes = base64.b64decode(qr_data.split(",")[1])
                         st.image(qr_bytes, caption="Scan in WhatsApp: Linked Devices", width=220)
                     except Exception:
                         st.image(qr_data, caption="Scan in WhatsApp: Linked Devices", width=220)
                 else:
-                    st.info("⚡ Initializing WhatsApp AI Bridge... Loading live QR code...")
-                    time.sleep(1.5)
-                    st.rerun()
+                    refresh_count = st.session_state.get("qr_refresh_count", 0)
+                    if refresh_count < 2:
+                        st.session_state["qr_refresh_count"] = refresh_count + 1
+                        st.info("⚡ Initializing WhatsApp AI Bridge... Loading live QR code...")
+                        time.sleep(1.2)
+                        st.rerun()
+                    else:
+                        st.warning("Bridge standing by. Click refresh below to load the live QR code.")
 
                 if st.button("🔄 Check Connection / Refresh QR", key="btn_check_qr"):
+                    st.session_state["qr_refresh_count"] = 0
                     st.rerun()
 
             with qcol2:

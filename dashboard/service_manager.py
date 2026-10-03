@@ -1,31 +1,33 @@
-"""Automatic Background Service Supervisor for Nexomate.
+"""Autonomous Background Service Supervisor for Nexomate.
 
-Zero-configuration auto-starter: Checks if the FastAPI engine (port 8000)
-and the WhatsApp Bridge (port 8001) are running. If not, spawns them
-automatically as detached background subprocesses. Non-tech users never
-need to run terminal commands.
+Zero-configuration auto-starter:
+Manages FastAPI backend (port 8000) and Node.js WhatsApp Baileys bridge (port 8001).
+If either service is ever offline, automatically spawns it and keeps it alive.
 """
 
 import os
 import sys
 import time
 import shutil
+import threading
 import subprocess
 import requests
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-SERVER_SCRIPT = BASE_DIR / "lead-workflow-demo" / "server.py"
+SERVER_DIR = BASE_DIR / "lead-workflow-demo"
+SERVER_SCRIPT = SERVER_DIR / "server.py"
 BRIDGE_DIR = BASE_DIR / "whatsapp-bridge"
-BRIDGE_SCRIPT = BRIDGE_DIR / "bridge.js"
 
 FASTAPI_URL = "http://127.0.0.1:8000/api/config"
 BRIDGE_URL = "http://127.0.0.1:8001/status"
 
-_spawned_processes = {}
+_fastapi_proc = None
+_bridge_proc = None
+_lock = threading.Lock()
 
 
-def is_service_alive(url, timeout=1.5):
+def is_service_alive(url, timeout=1.0):
     try:
         r = requests.get(url, timeout=timeout)
         return r.status_code == 200
@@ -34,71 +36,71 @@ def is_service_alive(url, timeout=1.5):
 
 
 def start_fastapi_server():
-    """Spawns the FastAPI lead generation backend in the background."""
-    if is_service_alive(FASTAPI_URL):
-        return True
+    """Starts the FastAPI lead generation server if not running."""
+    global _fastapi_proc
+    with _lock:
+        if is_service_alive(FASTAPI_URL):
+            return True
 
-    python_bin = sys.executable
-    cmd = [python_bin, str(SERVER_SCRIPT)]
-    kwargs = {
-        "cwd": str(SERVER_SCRIPT.parent),
-        "stdout": subprocess.DEVNULL,
-        "stderr": subprocess.DEVNULL,
-    }
+        if _fastapi_proc is None or _fastapi_proc.poll() is not None:
+            cmd = [sys.executable, str(SERVER_SCRIPT)]
+            kwargs = {
+                "cwd": str(SERVER_DIR),
+                "stdout": subprocess.DEVNULL,
+                "stderr": subprocess.DEVNULL,
+            }
+            if os.name == "nt":
+                kwargs["creationflags"] = 0x08000000  # CREATE_NO_WINDOW
+            try:
+                _fastapi_proc = subprocess.Popen(cmd, **kwargs)
+            except Exception as e:
+                print(f"[ServiceManager] Error starting FastAPI: {e}")
+                return False
 
-    if os.name == "nt":
-        # Windows: CREATE_NO_WINDOW | DETACHED_PROCESS
-        kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW | 0x00000008
-
-    try:
-        proc = subprocess.Popen(cmd, **kwargs)
-        _spawned_processes["fastapi"] = proc
-        # Wait up to 3 seconds for port to bind
-        for _ in range(6):
+        for _ in range(8):
             time.sleep(0.5)
             if is_service_alive(FASTAPI_URL):
                 return True
-    except Exception as e:
-        print(f"[ServiceManager] Error spawning FastAPI: {e}")
 
     return is_service_alive(FASTAPI_URL)
 
 
 def start_whatsapp_bridge():
-    """Spawns the Node.js WhatsApp Baileys bridge in the background."""
-    if is_service_alive(BRIDGE_URL):
-        return True
+    """Starts the Node.js WhatsApp bridge if not running."""
+    global _bridge_proc
+    with _lock:
+        if is_service_alive(BRIDGE_URL):
+            return True
 
-    node_bin = shutil.which("node")
-    if not node_bin:
-        print("[ServiceManager] Node.js not found in PATH")
-        return False
+        node_bin = shutil.which("node")
+        if not node_bin:
+            return False
 
-    cmd = [node_bin, str(BRIDGE_SCRIPT)]
-    kwargs = {
-        "cwd": str(BRIDGE_DIR),
-        "stdout": subprocess.DEVNULL,
-        "stderr": subprocess.DEVNULL,
-    }
+        if _bridge_proc is None or _bridge_proc.poll() is not None:
+            cmd = [node_bin, "bridge.js"]
+            kwargs = {
+                "cwd": str(BRIDGE_DIR),
+                "stdout": subprocess.DEVNULL,
+                "stderr": subprocess.DEVNULL,
+            }
+            if os.name == "nt":
+                kwargs["creationflags"] = 0x08000000  # CREATE_NO_WINDOW
+            try:
+                _bridge_proc = subprocess.Popen(cmd, **kwargs)
+            except Exception as e:
+                print(f"[ServiceManager] Error starting WhatsApp bridge: {e}")
+                return False
 
-    if os.name == "nt":
-        kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW | 0x00000008
-
-    try:
-        proc = subprocess.Popen(cmd, **kwargs)
-        _spawned_processes["bridge"] = proc
-        for _ in range(6):
+        for _ in range(8):
             time.sleep(0.5)
             if is_service_alive(BRIDGE_URL):
                 return True
-    except Exception as e:
-        print(f"[ServiceManager] Error spawning WhatsApp bridge: {e}")
 
     return is_service_alive(BRIDGE_URL)
 
 
 def ensure_all_services_running():
-    """Ensures both FastAPI and WhatsApp bridge are healthy and auto-starts them."""
+    """Checks both services and starts them if necessary."""
     fastapi_ok = is_service_alive(FASTAPI_URL)
     if not fastapi_ok:
         fastapi_ok = start_fastapi_server()
