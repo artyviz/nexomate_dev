@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nexomate – Live WhatsApp & Email Lead Automation Demo</title>
+  <meta name="description" content="Live demo: AI lead capture, qualification, booking and follow-up over WhatsApp and email." />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="live.css" />
+</head>
+<body>
+  <div class="bg-glow"></div>
+  <header class="topbar">
+    <div class="brand"><span class="logo">N</span><div><h1>Nexomate</h1><p id="biz">Lead-to-Customer Automation</p></div></div>
+    <div class="status">
+      <span class="chip" id="chipWa">WhatsApp</span>
+      <span class="chip" id="chipEm">Email</span>
+      <span class="chip" id="chipAi">AI</span>
+      <div class="toggle" id="modeToggle" role="group" aria-label="Mode">
+        <button data-mode="mock" class="on">Mock</button><button data-mode="live">Live</button>
+      </div>
+    </div>
+  </header>
+
+  <section class="stats" id="stats" aria-label="Analytics"></section>
+
+  <main class="layout">
+    <!-- LEFT -->
+    <aside class="col">
+      <section class="panel" id="newLeadPanel">
+        <h2>1 · New lead arrives</h2>
+        <div class="entries" id="entries">
+          <button class="entry on" data-e="form">📝 Web form</button>
+          <button class="entry" data-e="ad">📣 Click-to-WhatsApp ad</button>
+          <button class="entry" data-e="qr">📷 QR code</button>
+          <button class="entry" data-e="widget">💬 Chat widget</button>
+        </div>
+        <p class="hint left" id="entryHint">Lead fills a form; bot greets first.</p>
+        <div class="form">
+          <input id="fName" placeholder="Lead name" value="Sarah Johnson" />
+          <input id="fCompany" placeholder="Company" value="Acme Logistics" />
+          <input id="fPhone" placeholder="WhatsApp number e.g. +919876543210" />
+          <input id="fEmail" placeholder="Email address" />
+          <select id="fSource">
+            <option>Website Form</option><option>Facebook / Instagram</option><option>Google</option>
+            <option>WhatsApp</option><option>Phone Call</option><option>Email</option><option>Website Chat</option>
+          </select>
+          <div class="checks">
+            <label><input type="checkbox" id="chWa" checked /> WhatsApp</label>
+            <label><input type="checkbox" id="chEm" /> Email</label>
+          </div>
+          <button class="btn primary" id="createLead">⚡ Capture lead &amp; respond</button>
+        </div>
+        <div class="qrcard" id="qrcard" hidden>
+          <img id="qrimg" alt="Scan to chat on WhatsApp" width="110" height="110" />
+          <div><b>Scan to chat on WhatsApp</b><small>Real entry point: scanning opens a chat with the bot, and your first message creates the lead automatically.</small><a id="qrlink" target="_blank" rel="noopener">Open link</a></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Workflow progress <span class="flag" id="flag"></span></h2>
+        <ol id="stages" class="stages"></ol>
+      </section>
+
+      <section class="panel">
+        <h2>Presenter controls</h2>
+        <div class="actions" id="actions"></div>
+        <label class="auto"><input type="checkbox" id="autoFu" checked /> Auto follow-up if lead is silent (45s)</label>
+      </section>
+    </aside>
+
+    <!-- CENTER : WhatsApp -->
+    <section class="col center">
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="wa-head">
+          <span class="back">‹</span><div class="avatar">M</div>
+          <div><b id="waTitle">Maya · Brightside Dental</b><small>online</small></div>
+        </div>
+        <div class="wa-body" id="waBody"><p class="empty">Capture a lead to start the WhatsApp conversation.</p></div>
+        <form class="wa-input" id="waForm">
+          <input id="waText" placeholder="Reply as the lead…" autocomplete="off" disabled />
+          <button type="submit" disabled>➤</button>
+        </form>
+      </div>
+      <p class="hint" id="waHint">Mock mode: type as the lead. Live mode: reply from your real WhatsApp.</p>
+    </section>
+
+    <!-- RIGHT -->
+    <aside class="col">
+      <section class="panel crm">
+        <h2>CRM record</h2>
+        <div class="lead-card" id="leadCard"></div>
+      </section>
+
+      <section class="panel mail">
+        <h2>Email inbox <span class="tag" id="mailTag"></span></h2>
+        <div id="mailList" class="mail-list"><p class="empty">No emails yet. Tick “Email” when capturing the lead.</p></div>
+        <form id="mailForm" class="mail-reply">
+          <textarea id="mailText" rows="2" placeholder="Reply as the lead by email…" disabled></textarea>
+          <button class="btn" disabled>Send reply</button>
+        </form>
+      </section>
+
+      <section class="panel">
+        <h2>Automation log</h2>
+        <ul id="log"></ul>
+      </section>
+    </aside>
+  </main>
+  <script src="live.js"></script>
+</body>
+</html>

@@ -85,23 +85,26 @@ def overview_page():
                     if lead.company and lead.full_name:
                         title_comp += f" · {lead.company}"
                     elif lead.company and not lead.full_name:
-                        title_comp = lead.industry or 'Solar Installation'
+                        title_comp = lead.industry or lead.company or 'Direct Inbound'
 
-                    st.markdown(f"""
-                    <div class="noir-card" style="padding: 1rem 1.2rem; margin-bottom: 0.6rem;">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <div>
-                                <div style="font-family: 'Lora', serif; font-weight: 700; font-size: 1rem; color: #F3F3EF;">
-                                    {lead.full_name or lead.company or 'Unknown Lead'}
-                                </div>
-                                <div style="font-family: 'JetBrains Mono', monospace; color: #888888; font-size: 0.75rem; margin-top: 2px;">
-                                    {title_comp} {('· ' + lead.city) if lead.city else ''}
-                                </div>
-                            </div>
-                            <div>{score_badge}</div>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    subtitle = title_comp.strip()
+                    if lead.city:
+                        subtitle += f" · {lead.city}"
+                    if not subtitle:
+                        subtitle = lead.phone or lead.email or "WhatsApp Inbound Prospect"
+
+                    card_html = (
+                        '<div class="noir-card" style="padding: 1rem 1.2rem; margin-bottom: 0.6rem;">'
+                        '<div style="display:flex; justify-content:space-between; align-items:center;">'
+                        '<div>'
+                        f'<div style="font-family: \'Lora\', serif; font-weight: 700; font-size: 1rem; color: #F3F3EF;">{lead.full_name or lead.company or "Unknown Lead"}</div>'
+                        f'<div style="font-family: \'JetBrains Mono\', monospace; color: #888888; font-size: 0.75rem; margin-top: 2px;">{subtitle}</div>'
+                        '</div>'
+                        f'<div>{score_badge}</div>'
+                        '</div>'
+                        '</div>'
+                    )
+                    st.markdown(card_html, unsafe_allow_html=True)
             else:
                 st.markdown("""
                 <div class="noir-card" style="padding: 1.5rem; text-align: center; color: #888888; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;">
@@ -125,20 +128,18 @@ def overview_page():
                     classification = reply.classification or reply.user_override or "UNKNOWN"
                     badge_class = "badge-high" if classification == "INTERESTED" else "badge-medium"
                     sender_name = lead.full_name if lead else reply.sender
+                    body_snippet = (reply.body or '').strip()[:130] or "Incoming response"
 
-                    st.markdown(f"""
-                    <div class="noir-card" style="padding: 1rem 1.2rem; margin-bottom: 0.6rem;">
-                        <div style="display: flex; justify-content: space-between; align-items: baseline;">
-                            <div style="font-family: 'Lora', serif; font-weight: 700; font-size: 1rem; color: #F3F3EF;">
-                                {sender_name}
-                            </div>
-                            <span class="{badge_class}">{classification}</span>
-                        </div>
-                        <div style="font-family: 'Lora', serif; color: #CCCCCC; font-size: 0.85rem; margin-top: 0.4rem; font-style: italic;">
-                            "{(reply.body or '')[:130]}..."
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    reply_html = (
+                        '<div class="noir-card" style="padding: 1rem 1.2rem; margin-bottom: 0.6rem;">'
+                        '<div style="display: flex; justify-content: space-between; align-items: baseline;">'
+                        f'<div style="font-family: \'Lora\', serif; font-weight: 700; font-size: 1rem; color: #F3F3EF;">{sender_name}</div>'
+                        f'<span class="{badge_class}">{classification}</span>'
+                        '</div>'
+                        f'<div style="font-family: \'Lora\', serif; color: #CCCCCC; font-size: 0.85rem; margin-top: 0.4rem; font-style: italic;">"{body_snippet}..."</div>'
+                        '</div>'
+                    )
+                    st.markdown(reply_html, unsafe_allow_html=True)
             else:
                 st.markdown("""
                 <div class="noir-card" style="padding: 1.5rem; text-align: center; color: #888888; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;">

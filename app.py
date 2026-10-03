@@ -379,6 +379,7 @@ with st.sidebar:
             "◉ Leads",
             "✉ Outreach",
             "↩ Inbox",
+            "💬 WhatsApp AI",
             "▤ Campaigns",
             "📊 Analytics",
             "📁 Excel",
@@ -414,6 +415,10 @@ elif page == "✉ Outreach":
 elif page == "↩ Inbox":
     from dashboard.inbox import inbox_page
     inbox_page()
+
+elif page == "💬 WhatsApp AI":
+    from dashboard.whatsapp_page import whatsapp_page
+    whatsapp_page()
 
 elif page == "▤ Campaigns":
     from dashboard.campaigns import campaigns_page

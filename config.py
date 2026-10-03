@@ -47,6 +47,8 @@ AI_PROVIDER = os.getenv("AI_PROVIDER", "auto")
 # ── Groq (Free Cloud AI) ────────────────────────────────────────────────────
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 GROQ_MODEL = os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b")
+BUSINESS_NAME = os.getenv("BUSINESS_NAME", "Nexomate")
+
 
 # ── Ollama (Local AI) ───────────────────────────────────────────────────────
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")

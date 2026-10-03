@@ -1,40 +1,16 @@
-# render.yaml — Render Blueprint for Nexomate
-# Deploy: Connect this repo on https://render.com → New → Blueprint
-# Or: New → Web Service → Connect repo manually
-
 services:
   - type: web
-    name: nexomate
-    runtime: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: bash render_start.sh
-    envVars:
-      - key: GROQ_API_KEY
-        sync: false  # Set manually in Render dashboard
-      - key: GROQ_MODEL
-        value: qwen/qwen3.8-27b
-      - key: AI_PROVIDER
-        value: auto
-      - key: SMTP_HOST
-        sync: false
-      - key: SMTP_PORT
-        sync: false
-      - key: SMTP_USER
-        sync: false
-      - key: SMTP_PASSWORD
-        sync: false
-      - key: IMAP_HOST
-        sync: false
-      - key: IMAP_PORT
-        sync: false
-      - key: IMAP_USER
-        sync: false
-      - key: IMAP_PASSWORD
-        sync: false
-      - key: PYTHON_VERSION
-        value: "3.11.6"
-    disk:
-      name: nexomate-data
-      mountPath: /opt/nexomate/data
-      sizeGB: 1  # Free tier allows 1GB
+    name: nexomate-lead-ai
+    runtime: docker
     plan: free
+    region: oregon
+    dockerfilePath: Dockerfile
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: GROQ_API_KEY
+        sync: false
+      - key: BUSINESS_NAME
+        value: Nexomate
+      - key: DEMO_GROQ_MODEL
+        value: openai/gpt-oss-20b

@@ -6,3 +6,7 @@ beautifulsoup4
 requests
 groq
 python-dotenv
+fastapi
+uvicorn
+pydantic
+qrcode

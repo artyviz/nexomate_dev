@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nexomate – Lead-to-Customer Workflow Demo</title>
+  <meta name="description" content="Interactive demo of an automated lead capture, qualification, booking and retention workflow." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="bg-glow"></div>
+  <header class="topbar">
+    <div class="brand"><span class="logo">N</span><div><h1>Nexomate</h1><p>Lead-to-Customer Automation · Live Demo</p></div></div>
+    <div class="controls">
+      <label>Lead source
+        <select id="source">
+          <option>Website Form</option><option>Facebook / Instagram</option><option>Google</option>
+          <option>WhatsApp</option><option>Phone Call</option><option>Email</option><option>Website Chat</option>
+        </select>
+      </label>
+      <label>Scenario
+        <select id="scenario"></select>
+      </label>
+      <label>Speed
+        <select id="speed"><option value="1800">Normal</option><option value="3000">Slow</option><option value="900">Fast</option></select>
+      </label>
+      <button id="play" class="btn primary">▶ Run demo</button>
+      <button id="step" class="btn">Step</button>
+      <button id="reset" class="btn ghost">Reset</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="panel flow" aria-label="Workflow">
+      <h2>Workflow</h2>
+      <div id="phases"></div>
+    </section>
+
+    <section class="col">
+      <div class="panel crm" aria-label="CRM record">
+        <h2>CRM Lead Record</h2>
+        <div class="lead-card" id="leadCard"></div>
+      </div>
+      <div class="panel chat" aria-label="Conversation">
+        <h2>Conversation <span id="channelTag" class="tag"></span></h2>
+        <div id="chat" class="chat-body"><p class="empty">Press <b>Run demo</b> to start.</p></div>
+      </div>
+    </section>
+
+    <section class="panel log" aria-label="Activity log">
+      <h2>Automation Log</h2>
+      <ul id="log"></ul>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

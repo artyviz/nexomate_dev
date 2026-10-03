@@ -42,3 +42,12 @@ scrapped/
 .freebuff/
 info/
 
+# Node & WhatsApp Bridge Sessions
+node_modules/
+whatsapp-bridge/node_modules/
+whatsapp-bridge/auth_info/
+whatsapp-bridge/*.log
+
+# External tools
+wacrm/
+
