@@ -478,29 +478,45 @@ I was in a quick meeting, but I'm here right now on WhatsApp! How can I help you
                     st.link_button("OPEN IN WHATSAPP ↗", f"https://wa.me/{wa_clean}")
 
             # Sync into Nexomate Permanent Database
-            if st.button("💾 SAVE PROSPECT TO PROSPECT REGISTRY (SQLITE)", key="btn_save_sql"):
-                db = SessionLocal()
-                try:
-                    exists = db.query(Lead).filter((Lead.phone == sl_phone) | (Lead.email == sl_email)).first()
-                    if not exists:
-                        new_db_lead = Lead(
-                            full_name=sl_name,
-                            phone=sl_phone,
-                            email=sl_email if "@" in str(sl_email) else None,
-                            company=sl_company if sl_company != "—" else None,
-                            source="WhatsApp Inbound AI",
-                            fit_score=float(sl_score) if str(sl_score).isdigit() else 85.0,
-                            score_level="HIGH" if sl_priority == "HOT" else "MEDIUM",
-                            lead_status="QUALIFIED" if sl_stage in ("BOOKED", "WON") else "IN_PROGRESS",
-                            notes=f"Auto-captured via WhatsApp AI. Demo Slot: {sl_slot}. Sentiment: {sl_sentiment}"
-                        )
-                        db.add(new_db_lead)
-                        db.commit()
-                        st.success(f"Prospect {sl_name} permanently saved into SQLite Prospect Directory!")
-                    else:
-                        st.info("Prospect already recorded in database.")
-                finally:
-                    db.close()
+            btn_col_a, btn_col_b = st.columns(2)
+            with btn_col_a:
+                if st.button("💾 SAVE PROSPECT TO SQLITE", key="btn_save_sql", use_container_width=True):
+                    db = SessionLocal()
+                    try:
+                        exists = db.query(Lead).filter((Lead.phone == sl_phone) | (Lead.email == sl_email)).first()
+                        if not exists:
+                            new_db_lead = Lead(
+                                full_name=sl_name,
+                                phone=sl_phone,
+                                email=sl_email if "@" in str(sl_email) else None,
+                                company=sl_company if sl_company != "—" else None,
+                                source="WhatsApp Inbound AI",
+                                fit_score=float(sl_score) if str(sl_score).isdigit() else 85.0,
+                                score_level="HIGH" if sl_priority == "HOT" else "MEDIUM",
+                                lead_status="QUALIFIED" if sl_stage in ("BOOKED", "WON") else "IN_PROGRESS",
+                                notes=f"Auto-captured via WhatsApp AI. Demo Slot: {sl_slot}. Sentiment: {sl_sentiment}"
+                            )
+                            db.add(new_db_lead)
+                            db.commit()
+                            st.success(f"Saved into SQLite Database!")
+                        else:
+                            st.info("Prospect already recorded in database.")
+                    finally:
+                        db.close()
+
+            with btn_col_b:
+                if st.button("📢 NOTIFY FOUNDER TEAM", key="btn_notify_founders", use_container_width=True):
+                    with st.spinner("Dispatching alerts across Email, WhatsApp & SMS..."):
+                        try:
+                            from core.founder_notifier import notify_all_founders
+                            res = notify_all_founders(selected_lead, event="MANUAL_UI_TRIGGER")
+                            em_sent = any("SENT" in str(v) for v in res.get("email", {}).values())
+                            if em_sent:
+                                st.success("🚀 Founder alerts sent to umarfarhan474@gmail.com & devrajput0107@gmail.com!")
+                            else:
+                                st.info(f"Notification status: {res}")
+                        except Exception as e:
+                            st.error(f"Notification error: {e}")
 
     # ── Refresh trigger ──────────────────────────────────────────────────────
     st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)

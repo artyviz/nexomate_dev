@@ -300,9 +300,32 @@ def apply_ai(lead, out):
             ("HOT" if lead["score"] >= 75 else "WARM" if lead["score"] >= 40 else "COLD")).upper()
         set_stage(lead, "scored"); log(lead, f"🎯 Lead scored {lead['score']}/100 → {lead['priority']}")
         route(lead)
-    if out.get("booking_slot") and not lead["slot"]:
-        lead["slot"] = out["booking_slot"]; set_stage(lead, "booked"); lead["flag"] = None
+    # Detect booking slot from JSON field or reply text
+    reply_text = out.get("reply", "")
+    detected_slot = out.get("booking_slot")
+    if not detected_slot and ("scheduled your demo" in reply_text.lower() or "demo is set for" in reply_text.lower()):
+        m = re.search(r"\*([^*]+(?:AM|PM|am|pm|[0-9]))\*", reply_text)
+        if m:
+            detected_slot = m.group(1).strip()
+        else:
+            detected_slot = "Confirmed in WhatsApp Chat"
+
+    if detected_slot and not lead.get("slot"):
+        lead["slot"] = detected_slot
+        set_stage(lead, "booked")
+        lead["flag"] = None
         log(lead, f"📅 Demo booked: {lead['slot']} – confirmation sent")
+
+    # Automatically notify Farhan & Devrajput via Email, WhatsApp & SMS upon booking
+    if lead.get("slot") and not lead.get("founder_notified"):
+        lead["founder_notified"] = True
+        try:
+            from core.founder_notifier import notify_all_founders
+            res = notify_all_founders(lead, event="DEMO_BOOKED")
+            log(lead, "📢 Founder team notified via Email & WhatsApp")
+        except Exception as ne:
+            print(f"[Notifier error]: {ne}")
+
     sync_to_sqlite(lead)
 
 def sync_to_sqlite(lead):
@@ -480,6 +503,15 @@ def list_leads():
 def get_lead(lid: str):
     if lid not in LEADS: raise HTTPException(404)
     return LEADS[lid]
+
+@app.post("/api/leads/{lid}/notify_founders")
+def trigger_founder_notification(lid: str):
+    if lid not in LEADS: raise HTTPException(404)
+    lead = LEADS[lid]
+    from core.founder_notifier import notify_all_founders
+    res = notify_all_founders(lead, event="MANUAL_TRIGGER")
+    log(lead, "📢 Founder team notified (Email + WhatsApp + SMS)")
+    return res
 
 class Msg(BaseModel):
     channel: str = "whatsapp"
